@@ -4,6 +4,21 @@
 namespace :resque do
   task :setup
 
+  desc "Start a threaded Resque worker"
+  task :threaded_worker => :setup do
+    require 'resque'
+
+    queues    = (ENV['QUEUES'] || ENV['QUEUE']).to_s.split(',')
+    pool_size = (ENV['POOL_SIZE'] || 10).to_i
+
+    begin
+      worker_pool = ThreadedWorkerPool.new(queues, pool_size)
+      worker_pool.work(ENV['INTERVAL'] || 5)
+    rescue Resque::NoQueueError
+      abort "set QUEUE env var, e.g. $ QUEUE=critical,high rake resque:work"
+    end
+  end
+
   desc "Start a Resque worker"
   task :work => :setup do
     require 'resque'
